@@ -15,8 +15,8 @@
 5. デプロイ要件 (Render)render.yaml の作成（WebサービスおよびDB設定）。静的ファイル (WhiteNoise) および環境変数の設定。デプロイ後のスモークテスト環境の構築。
 
 6. プロジェクト・ディレクトリ構成案
-
-gemini-mart/
+   [セットアップ方法](./setup.md)
+gemini-mart/ 
 ├── .python-version
 ├── pyproject.toml      # uv で管理
 ├── render.yaml         # Render デプロイ設定
