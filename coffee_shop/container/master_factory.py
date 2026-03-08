@@ -35,6 +35,6 @@ class MasterFactory(factory.django.DjangoModelFactory):
         
         # 内部で一時的にMetaを書き換えて生成する
         cls._meta.model = target_model
-        return super().create(**kwargs)
+        return super().build(**kwargs)
     
     

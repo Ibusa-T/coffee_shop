@@ -12,5 +12,5 @@ class ProductTypeRepository(Baserepository):
     @classmethod
     def findAll(cls):
         """引数なし。純粋に全件を返す"""
-        return cls.master_factory.master_factory.get_model('ProductType').objects.all()
+        return cls.master_factory.get_model('ProductType').objects.all()
 
