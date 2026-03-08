@@ -1,0 +1,97 @@
+-- 1. 商品区分
+CREATE TABLE PRODUCT_TYPE (
+    TYPE_CODE    CHAR(10)     NOT NULL,
+    TYPE_NAME    VARCHAR(20)  NOT NULL,
+    PRIMARY KEY (TYPE_CODE),
+    -- Django の UniqueConstraint
+    CONSTRAINT unique_type_name UNIQUE (TYPE_NAME),
+    -- Django の MinLengthValidator を模した長さチェック
+    CONSTRAINT type_code_length_check CHECK (LENGTH(TYPE_CODE) = 10)
+);
+
+-- 2. 商品
+CREATE TABLE PRODUCT (
+    PRODUCT_CODE    CHAR(10)     NOT NULL,
+    PRODUCT_NAME    VARCHAR(50)  NOT NULL,
+    TYPE_CODE       CHAR(10)     NOT NULL,
+    PRICE           INTEGER      NOT NULL,
+    PRIMARY KEY (PRODUCT_CODE),
+    FOREIGN KEY (TYPE_CODE) REFERENCES PRODUCT_TYPE(TYPE_CODE) ON DELETE RESTRICT,
+    -- Django の CheckConstraint: Q(price__gte=0)
+    CONSTRAINT product_price_not_negative CHECK (PRICE >= 0),
+    CONSTRAINT product_code_length_check CHECK (LENGTH(PRODUCT_CODE) = 10)
+);
+
+-- 3. セール期間
+CREATE TABLE SALE_PERIOD (
+    SALES_CODE    CHAR(10)     NOT NULL,
+    SALE_TITLE    TEXT         NOT NULL,
+    START_DATE    DATE         NOT NULL,
+    END_DATE      DATE         NOT NULL,
+    PRIMARY KEY (SALES_CODE),
+    CONSTRAINT sales_code_length_check CHECK (LENGTH(SALES_CODE) = 10)
+);
+
+-- 4. セール詳細情報
+CREATE TABLE SALES_INFO (
+    SALES_CODE      CHAR(10)     NOT NULL,
+    PRODUCT_CODE    CHAR(10)     NOT NULL,
+    DISCOUNT_RATE   INTEGER      NOT NULL,
+    FOREIGN KEY (SALES_CODE) REFERENCES SALE_PERIOD(SALES_CODE) ON DELETE RESTRICT,
+    FOREIGN KEY (PRODUCT_CODE) REFERENCES PRODUCT(PRODUCT_CODE) ON DELETE RESTRICT,
+    -- Django の UniqueConstraint
+    CONSTRAINT unique_sales_product UNIQUE (SALES_CODE, PRODUCT_CODE),
+    -- Django の CheckConstraint: 0 < rate < 100
+    CONSTRAINT discount_rate_range CHECK (DISCOUNT_RATE > 0 AND DISCOUNT_RATE < 100)
+    CONSTRAINT sales_code_length_check CHECK (LENGTH(SALES_CODE) = 10)
+    CONSTRAINT product_code_length_check CHECK (LENGTH(PRODUCT_CODE) = 10)
+);
+
+-- 5. 顧客
+CREATE TABLE CONSUMER (
+    CONSUMER_CODE    CHAR(10)     NOT NULL,
+    CONSUMER_NAME    VARCHAR(50)  NOT NULL,
+    MAIL_ADDRESS     VARCHAR(50)  NOT NULL,
+    GENDER           CHAR(1)      NOT NULL,
+    AGE              INTEGER      NOT NULL,
+    ADDRESS          VARCHAR(50)  NOT NULL,
+    PRIMARY KEY (CONSUMER_CODE),
+    CONSTRAINT unique_consumer_name UNIQUE (CONSUMER_NAME),
+    -- Django の CheckConstraint: GENDER IN ('1', '2')
+    CONSTRAINT consumer_gender_check CHECK (GENDER IN ('1', '2')),
+    -- Django の CheckConstraint: AGE BETWEEN 1 AND 100
+    CONSTRAINT consumer_age_range_check CHECK (AGE >= 1 AND AGE <= 100),
+    CONSTRAINT consumer_code_length_check CHECK (LENGTH(CONSUMER_CODE) = 10)
+);
+
+-- 6. 伝票
+CREATE TABLE SLIP (
+    SLIP_CODE        CHAR(10)     NOT NULL,
+    PRODUCT_CODE     CHAR(10)     NOT NULL,
+    CONSUMER_CODE    CHAR(10)     NOT NULL,
+    SALES_CODE       CHAR(10),
+    ORDER_DATE       DATE         NOT NULL DEFAULT CURRENT_DATE,
+    PRICE            INTEGER      NOT NULL,
+    QUANTITY         INTEGER      NOT NULL,
+    PRIMARY KEY (SLIP_CODE),
+    FOREIGN KEY (PRODUCT_CODE)  REFERENCES PRODUCT(PRODUCT_CODE) ON DELETE RESTRICT,
+    FOREIGN KEY (CONSUMER_CODE) REFERENCES CONSUMER(CONSUMER_CODE) ON DELETE RESTRICT,
+    FOREIGN KEY (SALES_CODE)    REFERENCES SALE_PERIOD(SALES_CODE) ON DELETE RESTRICT,
+    CONSTRAINT slip_price_not_negative CHECK (PRICE >= 0),
+    CONSTRAINT slip_quantity_not_negative CHECK (QUANTITY >= 0),
+    CONSTRAINT slip_code_length_check CHECK (LENGTH(SLIP_CODE) = 10)
+);
+
+-- 7. 配送
+CREATE TABLE DELIVERY (
+    DELIVERY_CODE    CHAR(10)     NOT NULL,
+    SLIP_CODE        CHAR(10)     NOT NULL,
+    DELIVERY_DATE    DATE         NOT NULL DEFAULT CURRENT_DATE,
+    DELIVERY_STATUS  VARCHAR(15)  NOT NULL,
+    FINISH_DATE      DATE,
+    PRIMARY KEY (DELIVERY_CODE),
+    FOREIGN KEY (SLIP_CODE) REFERENCES SLIP(SLIP_CODE) ON DELETE RESTRICT,
+    -- Django の CheckConstraint: STATUS リスト
+    CONSTRAINT delivery_status_check CHECK (DELIVERY_STATUS IN ('OUT_STOCK', 'NOW_DELIVERY', 'FINISH')),
+    CONSTRAINT delivery_code_length_check CHECK (LENGTH(DELIVERY_CODE) = 10)
+);
