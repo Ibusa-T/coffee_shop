@@ -1,0 +1,15 @@
+from abc import ABC, abstractmethod
+from coffee_shop.container.master_factory import MasterFactory
+
+class Baserepository(ABC):
+    master_factory = MasterFactory
+    @classmethod
+    @abstractmethod
+    def insert(cls,**kwargs):
+        pass         
+
+    @classmethod
+    @abstractmethod
+    def findAll(cls):
+        pass
+    
