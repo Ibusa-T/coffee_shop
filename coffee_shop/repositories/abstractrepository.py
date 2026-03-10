@@ -13,3 +13,7 @@ class Baserepository(ABC):
     def findAll(cls):
         pass
     
+    @classmethod
+    def delete(cls):
+        pass
+    

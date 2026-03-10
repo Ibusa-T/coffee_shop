@@ -4,27 +4,19 @@ import sys
 import django
 import random
 from datetime import date, timedelta
-
 # 1. プロジェクトルートをパスに追加
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(base_dir)
-
 # 2. Django設定の読み込み
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gemini_mart.settings')
 django.setup()
-
-from coffee_shop.repositories import repositories
-
+from coffee_shop.repositories import (
+    ConsumerRepository, DeliveryRepository, ProductRepository, ProductTypeRepository, 
+    SalesInfoRepository, SalePeriodRepository, SlipRepository
+)
 
 # 既存データの全削除（重複防止）
 print("Cleaning up old data...")
-Delivery.objects.all().delete()
-Slip.objects.all().delete()
-SalesInfo.objects.all().delete()
-SalePeriod.objects.all().delete()
-Product.objects.all().delete()
-ProductType.objects.all().delete()
-Consumer.objects.all().delete()
 
 # 1. マスターデータの作成
 print("Generating Master Data...")
@@ -35,8 +27,9 @@ type_data = [
     {"code": "T02", "name": "シングルオリジン"},
     {"code": "T03", "name": "デカフェ"},
 ]
-
-types = [ProductTypeFactory(type_code=d["code"], type_name=d["name"]) for d in type_data]
+for d in type_data:
+    ProductTypeRepository.insert(type_code = d["code"], type_name = d["name"])
+types = [ProductTypeRepository.findAll()]
 
 # 商品ラインナップ：コードも重複しないように追加したぜ
 product_list = [
@@ -65,56 +58,64 @@ sales_assignment = [
     # ブレンド祭は定番のブレンド（P001）を
     {"sale_code": "S004", "product_code": "P001", "discount": 20},
 ]
-products = []
-for data in product_list:
-    # ProductFactoryを呼ぶ際、モデルのフィールド名と完全に一致する引数だけを渡す
-    p = ProductFactory(
-        product_code=data["code"],
-        product_name=data["name"],
-        price=data["price"],
-        type_code=random.choice(types)
-    )
-    products.append(p)
+from datetime import date
 
+# SALE_PERIOD (セール期間) のテストデータ
+sale_periods = [
+    {
+        "sales_code": "S001      ", # CHAR(10) 制約に合わせて10桁
+        "sale_title": "デカフェ・ナイトセール",
+        "start_date": date(2024, 4, 1),
+        "end_date": date(2024, 4, 7)
+    },
+    {
+        "sales_code": "S002      ",
+        "sale_title": "シングルオリジン紀行",
+        "start_date": date(2024, 4, 10),
+        "end_date": date(2024, 4, 20)
+    },
+    {
+        "sales_code": "S003      ",
+        "sale_title": "ブラックフライデー",
+        "start_date": date(2024, 11, 20),
+        "end_date": date(2024, 11, 30)
+    },
+    {
+        "sales_code": "S004      ",
+        "sale_title": "ブレンド祭",
+        "start_date": date(2024, 5, 1),
+        "end_date": date(2024, 5, 10)
+    },
+]
+
+#商品情報の作成
+print("Generating Products...")
+print(product_list)
+
+
+ 
 # 2. セール情報の作成
 print("Generating Sale Periods...")
-active_sale = SalePeriodFactory(
-    sale_title="スプリング・ネブラ・フェア",
-    start_date=date.today() - timedelta(days=7),
-    end_date=date.today() + timedelta(days=7)
-)
-
-for p in random.sample(products, 3):
-    SalesInfoFactory(product_code=p, sales_code=active_sale, discount_rate=20)
+#random.randint(10, 30)
+print(sales_assignment)
 
 # 3. 注文と配送データの作成
 print("Generating Transaction Data...")
-consumers = ConsumerFactory.create_batch(10)
+print(sale_periods)
+
+
+
 
 # --- ここで D001 から D051 までのリストを自動生成するぜ ---
 delivery_code_list = [f"D{i:03d}" for i in range(1, 52)]
 for i in range(50):  # 50件のデータを作成
-    target_product = random.choice(products)
-    
+    target_product = random.choice(products)    
     # 注文 (Slip) の作成
-    order = SlipFactory(
-        product_code=target_product,
-        consumer_code=random.choice(consumers),
-        price=target_product.price,
-        sales_code=random.choice([active_sale, None]),
-        order_date=date.today() - timedelta(days=random.randint(0, 30))
-    )
+    #date.today() - timedelta(days=random.randint(0, 30))
     
     # 配送 (Delivery) の作成
     status = random.choice(["1", "2", "3"])
     finish = (order.order_date + timedelta(days=random.randint(1, 3))) if status == "3" else None
-    
-    DeliveryFactory(
-        delivery_code=delivery_code_list[i], # リストから順番にコードを割り当て
-        slip_code=order,
-        delivery_date=order.order_date + timedelta(days=1),
-        delivery_status=status,
-        finish_date=finish
-    )
+    timedelta(days=1)
 
 print(f"--- 完了！Delivery {delivery_code_list[0]} から {delivery_code_list[49]} まで使用したぜ ---")

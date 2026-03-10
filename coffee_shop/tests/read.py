@@ -10,6 +10,7 @@ except Exception as e:
     print(f'❌ エラー発生だ: {e}')
 
 # run terminal
+"""run sql"""
 """
 uv run python -c "
 >> import sqlite3, os

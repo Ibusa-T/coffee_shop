@@ -13,4 +13,7 @@ class ProductRepository(Baserepository):
         """引数なし。純粋に全件を返す"""
         
         return cls.master_factory.get_model('Product').objects.all()
-
+    
+    @classmethod 
+    def delete(cls):
+        cls.master_factory.get_model('Product').objects.all().delete()
