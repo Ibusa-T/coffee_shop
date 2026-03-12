@@ -1,0 +1,7 @@
+from coffee_shop.repositories.consumerrepository import ConsumerRepository
+from coffee_shop.repositories.deliveryrepository import DeliveryRepository
+from coffee_shop.repositories.productrepository import ProductRepository
+from coffee_shop.repositories.producttyperepository import ProductTypeRepository
+from coffee_shop.repositories.salesinforepository import SalesInfoRepository
+from coffee_shop.repositories.salesperiodRepository import SalePeriodRepository
+from coffee_shop.repositories.sliprepositories import SlipRepository

@@ -1,0 +1,1 @@
+from coffee_shop.container import master_factory
