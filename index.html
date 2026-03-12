@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula Coffee - 仮想ECサイト</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel CDN (JSXの実行に必要) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        /* スクロールバーのカスタマイズ */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #18181b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-modal {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 商品アイコン (SVG)
+        const CoffeeBeanIcon = ({ size = "w-20 h-20", color = "#5D4037" }) => (
+            <svg viewBox="0 0 24 24" className={`${size} mx-auto`} fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18.5 4.5C14.5 2.5 9.5 4.5 7.5 8.5C5.5 12.5 7.5 17.5 11.5 19.5C15.5 21.5 20.5 19.5 22.5 15.5C24.5 11.5 22.5 6.5 18.5 4.5Z" fill={color}/>
+                <path d="M7.5 8.5C5.5 12.5 7.5 17.5 11.5 19.5C8 18 5 14.5 4 10.5C3 6.5 5 2.5 8.5 1C5.5 3.5 4.5 7.5 7.5 8.5Z" fill="#4E342E" fillOpacity="0.3"/>
+                <path d="M12 19.5C12 19.5 13 15 17 13C21 11 22.5 6.5 22.5 6.5" stroke="#3E2723" strokeWidth="0.5"/>
+            </svg>
+        );
+
+        const products = [
+            { id: 1, name: "ダーク・ロースト・ネブラ", price: 1800, desc: "深煎りのコクと、チョコレートのような甘い余韻が特徴のブレンド。" },
+            { id: 2, name: "エチオピア・サンライズ", price: 2100, desc: "華やかなフローラルの香りと、ベリー系の明るい酸味。" },
+            { id: 3, name: "コロンビア・マイルド", price: 1650, desc: "ナッツの香ばしさと、バランスの取れた柔らかな口当たり。" },
+            { id: 4, name: "デカフェ・ナイト", price: 1900, desc: "カフェインレスとは思えない豊かな風味を夜のリラックスタイムに。" },
+            { id: 5, name: "マンデリン・ゴールド", price: 2300, desc: "力強いボディ感と、スパイスのような独特な後味。" },
+            { id: 6, name: "グアテマラ・アンティグア", price: 1750, desc: "上品な酸味と、ほのかに感じるスモーキーな香り。" }
+        ];
+
+        const App = () => {
+            const [currentPage, setCurrentPage] = useState('home'); // home, login, signup
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+            const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+            const [selectedProduct, setSelectedProduct] = useState(null);
+            const [cartItems, setCartItems] = useState([]);
+            const [isOrderComplete, setIsOrderComplete] = useState(false);
+
+            useEffect(() => {
+                const isAnyModalOpen = isMenuOpen || isCartOpen || isConfirmOpen || isCheckoutOpen;
+                document.body.style.overflow = isAnyModalOpen ? 'hidden' : 'unset';
+            }, [isMenuOpen, isCartOpen, isConfirmOpen, isCheckoutOpen]);
+
+            const addToCart = (product) => {
+                setCartItems(prev => {
+                    /*既にかごに同じ商品があれば加算*/
+                    const existing = prev.find(item => item.id === product.id);
+                    if (existing) {
+                        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+                    }
+                    /*1個目ならそのまま返す*/
+                    return [...prev, { ...product, quantity: 1 }];
+                });
+            }
+
+            const handleAddToCart = () => {
+                if (selectedProduct) {
+                    addToCart(selectedProduct);
+                    /*決済フラグを更新*/
+                    setIsConfirmOpen(false);
+                    setSelectedProduct(null);
+                }
+            };
+
+            const handleBuyNow = () => {
+                if (selectedProduct) {
+                    addToCart(selectedProduct);
+                    setIsConfirmOpen(false);
+                    setSelectedProduct(null);
+                    setIsCheckoutOpen(true);
+                }
+            };
+
+            const handleFinalOrder = (e) => {
+                e.preventDefault();
+                setIsOrderComplete(true);
+                setTimeout(() => {
+                    setCartItems([]);
+                    setIsOrderComplete(false);
+                    setIsCheckoutOpen(false);
+                }, 3000);
+            };
+
+            const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            // 認証画面コンポーネント
+            const AuthForm = ({ type }) => (
+                <div className="flex-grow flex items-center justify-center p-4 min-h-[70vh]">
+                    <div className="w-full max-w-md bg-zinc-900 rounded-3xl p-8 border border-zinc-800 shadow-2xl animate-modal">
+                        <div className="text-center mb-8">
+                            <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2">
+                                {type === 'login' ? 'Welcome Back' : 'Join Nebula'}
+                            </h2>
+                            <p className="text-zinc-500 text-sm">
+                                {type === 'login' ? 'アカウント情報を入力してログインしてください。' : '新しいアカウントを作成して特典を受け取りましょう。'}
+                            </p>
+                        </div>
+                        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setCurrentPage('home'); }}>
+                            {type === 'signup' && (
+                                <div>
+                                    <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">Full Name</label>
+                                    <input required type="text" placeholder="コーヒー 太郎" className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+                                </div>
+                            )}
+                            <div>
+                                <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">Email Address</label>
+                                <input required type="email" placeholder="email@example.com" className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">Password</label>
+                                <input required type="password" placeholder="••••••••" className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+                            </div>
+                            <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black py-4 rounded-xl transition-all shadow-lg active:scale-95 uppercase text-sm mt-4">
+                                {type === 'login' ? 'ログイン' : 'アカウント作成'}
+                            </button>
+                        </form>
+                        <div className="mt-8 text-center border-t border-zinc-800 pt-6">
+                            <button 
+                                onClick={() => setCurrentPage(type === 'login' ? 'signup' : 'login')}
+                                className="text-zinc-500 hover:text-emerald-400 text-xs font-bold transition"
+                            >
+                                {type === 'login' ? 'アカウントをお持ちでない方はこちら' : '既にアカウントをお持ちの方はこちら'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="flex flex-col min-h-screen font-sans bg-black text-white">
+                    {/* ヘッダー */}
+                    <header className="bg-emerald-900/95 backdrop-blur-md text-white shadow-md sticky top-0 z-50 h-20 flex items-center border-b border-emerald-800/50">
+                        <div className="container mx-auto px-4 flex justify-between items-center w-full">
+                            <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter cursor-pointer" onClick={() => setCurrentPage('home')}>
+                                NEBULA COFFEE
+                            </h1>
+                            
+                            {/* リンク追加 */}
+                            <nav className="hidden lg:flex items-center space-x-10 ml-12">
+                                <button onClick={() => setCurrentPage('home')} className="text-sm font-bold uppercase tracking-widest hover:text-emerald-400 transition">Store</button>
+                                <a href="#" className="text-sm font-bold uppercase tracking-widest hover:text-emerald-400 transition">About</a>
+                                <a href="#" className="text-sm font-bold uppercase tracking-widest hover:text-emerald-400 transition">Subscription</a>
+                                <a href="#" className="text-sm font-bold uppercase tracking-widest hover:text-emerald-400 transition">Contact</a>
+                            </nav>
+                            
+                            <div className="flex items-center space-x-2 md:space-x-4 ml-auto">
+                                {/* ログインボタン */}
+                                <button 
+                                    onClick={() => setCurrentPage('login')}
+                                    className="hidden sm:block p-2 hover:bg-emerald-800 rounded-full transition group"
+                                    aria-label="ログイン"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </button>
+
+                                <button 
+                                    onClick={() => setIsCartOpen(true)}
+                                    className="p-2 hover:bg-emerald-800 rounded-full transition relative group"
+                                    aria-label="ショッピングカートを開く"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    {cartItems.length > 0 && (
+                                        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold ring-2 ring-emerald-900">
+                                            {cartItems.reduce((a, b) => a + b.quantity, 0)}
+                                        </span>
+                                    )}
+                                </button>
+                                
+                                {/* モバイルメニュー用ボタン（認証へのアクセス） */}
+                                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="lg:hidden p-2 hover:bg-emerald-800 rounded-full transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* モバイルメニュー */}
+                    {isMenuOpen && (
+                        <div className="fixed inset-0 z-[100] lg:hidden">
+                            <div className="absolute inset-0 bg-black/95 backdrop-blur-xl animate-modal p-8 flex flex-col">
+                                <div className="flex justify-end mb-12">
+                                    <button onClick={() => setIsMenuOpen(false)} className="p-2 bg-zinc-800 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                </div>
+                                <div className="flex flex-col space-y-8 text-2xl font-black uppercase italic tracking-tighter">
+                                    <button onClick={() => { setCurrentPage('home'); setIsMenuOpen(false); }}>Store</button>
+                                    <button onClick={() => setIsMenuOpen(false)}>About</button>
+                                    <button onClick={() => setIsMenuOpen(false)}>Subscription</button>
+                                    <button onClick={() => { setCurrentPage('login'); setIsMenuOpen(false); }}>Login / Signup</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 商品追加の確認モーダル */}
+                    {isConfirmOpen && (
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setIsConfirmOpen(false)}></div>
+                            <div className="relative bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl p-8 border border-zinc-800 animate-modal text-center">
+                                <CoffeeBeanIcon size="w-16 h-16 mb-6" color="#10b981" />
+                                <h3 className="text-xl font-black mb-2 italic uppercase tracking-wider">Order Confirmation</h3>
+                                <p className="text-zinc-400 text-sm mb-8">
+                                    <span className="text-white font-bold block text-lg mb-1">{selectedProduct?.name}</span>
+                                    こちらの商品を注文します。
+                                </p>
+                                <div className="space-y-3">
+                                    <button onClick={handleBuyNow} className="w-full bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black py-4 rounded-xl transition-all shadow-lg active:scale-95">
+                                        今すぐ購入する（決済へ）
+                                    </button>
+                                    <button onClick={handleAddToCart} className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-black py-4 rounded-xl transition-all border border-zinc-700 active:scale-95">
+                                        カートに追加して買い物を続ける
+                                    </button>
+                                    <button onClick={() => setIsConfirmOpen(false)} className="w-full text-zinc-500 hover:text-zinc-300 text-xs font-bold py-2 transition">
+                                        キャンセル
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {/*setIsConfirmOpenがtrueになるとこのモーダルが表示*/}
+                    {/* 決済（チェックアウト）モーダル */}
+                    {isCheckoutOpen && (
+                        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={() => !isOrderComplete && setIsCheckoutOpen(false)}></div>
+                            <div className="relative bg-zinc-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-modal border border-zinc-800">
+                                {isOrderComplete ? (
+                                    <div className="p-16 text-center">
+                                        <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                            <svg className="w-12 h-12 text-zinc-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>
+                                        </div>
+                                        <h2 className="text-3xl font-black mb-2 italic uppercase">Order Complete</h2>
+                                        <p className="text-zinc-400">注文が完了しました。到着まで今しばらくお待ちください。</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col md:flex-row">
+                                        <div className="md:w-1/2 p-8 bg-zinc-800/50">
+                                            <h3 className="text-xs font-black text-emerald-500 uppercase tracking-widest mb-6">Order Summary</h3>
+                                            <div className="space-y-4 mb-8 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {cartItems.map(item => (
+                                                    <div key={item.id} className="flex justify-between text-sm">
+                                                        <span className="text-zinc-400">{item.name} <span className="text-zinc-600 font-mono">x{item.quantity}</span></span>
+                                                        <span className="font-mono">¥{(item.price * item.quantity).toLocaleString()}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="border-t border-zinc-700 pt-4 flex justify-between items-center">
+                                                <span className="text-sm font-bold uppercase">Total</span>
+                                                <span className="text-2xl font-black font-mono text-emerald-400">¥{cartTotal.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                        <div className="md:w-1/2 p-8">
+                                            <h3 className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-6">Checkout Details</h3>
+                                            <form onSubmit={handleFinalOrder} className="space-y-4">
+                                                <div>
+                                                    <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">Credit Card Number</label>
+                                                    <input required type="text" placeholder="**** **** **** ****" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+                                                </div>
+                                                <div className="flex gap-4">
+                                                    <div className="flex-grow">
+                                                        <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">Expiry</label>
+                                                        <input required type="text" placeholder="MM/YY" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+                                                    </div>
+                                                    <div className="w-1/3">
+                                                        <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block">CVC</label>
+                                                        <input required type="text" placeholder="***" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+                                                    </div>
+                                                </div>
+                                                <button type="submit" className="w-full bg-white text-black font-black py-4 rounded-xl transition-all hover:bg-emerald-400 active:scale-95 mt-4 uppercase text-sm">
+                                                    決済を確定する
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 買い物かごモーダル */}
+                    {isCartOpen && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
+                            <div className="relative bg-zinc-900 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-modal border border-zinc-800">
+                                <div className="bg-emerald-800 p-6 flex justify-between items-center">
+                                    <h2 className="text-xl font-bold uppercase tracking-tight flex items-center italic">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                        Shopping Cart
+                                    </h2>
+                                    <button onClick={() => setIsCartOpen(false)} className="hover:bg-emerald-700 p-1 rounded-full transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div className="p-6">
+                                    {cartItems.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <p className="text-zinc-500 italic mb-6">カートは空です</p>
+                                            <button onClick={() => setIsCartOpen(false)} className="text-emerald-400 text-xs font-bold uppercase tracking-widest border-b border-emerald-400 pb-1">ショッピングを続ける</button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                                                {cartItems.map(item => (
+                                                    <div key={item.id} className="flex justify-between items-center bg-zinc-800/50 p-4 rounded-xl border border-zinc-700/50 group">
+                                                        <div>
+                                                            <p className="font-bold text-sm group-hover:text-emerald-400 transition-colors">{item.name}</p>
+                                                            <p className="text-[10px] text-zinc-500 font-mono">Qty: {item.quantity}</p>
+                                                        </div>
+                                                        <p className="font-mono font-bold">¥{(item.price * item.quantity).toLocaleString()}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="pt-4 border-t border-zinc-800 flex justify-between items-center mb-6">
+                                                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Subtotal</span>
+                                                <span className="text-2xl font-black font-mono text-emerald-400">¥{cartTotal.toLocaleString()}</span>
+                                            </div>
+                                            <button 
+                                                onClick={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }}
+                                                className="w-full bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/10 active:scale-[0.98] uppercase text-sm"
+                                            >
+                                                注文手続きへ進む
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* メインコンテンツ - 画面遷移対応 */}
+                    <main className="flex-grow">
+                        {currentPage === 'home' ? (
+                            <div className="container mx-auto px-4 py-16">
+                                <div className="text-center mb-16">
+                                    <h2 className="text-4xl md:text-5xl font-black mb-4 italic uppercase tracking-tighter">Premium Selection</h2>
+                                    <div className="h-1 w-20 bg-emerald-600 mx-auto mb-6"></div>
+                                    <p className="text-zinc-500 max-w-lg mx-auto text-sm leading-relaxed">厳選された産地から届く、最高品質の豆をお届けします。一杯のコーヒーが、あなたの日常を特別なものに変える。</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
+                                    {products.map(product => (
+                                        <div key={product.id} className="bg-zinc-900/30 rounded-3xl p-8 border border-zinc-800/50 hover:border-emerald-800/50 transition-all group relative overflow-hidden">
+                                            <div className="aspect-square bg-zinc-800/50 rounded-2xl mb-8 flex items-center justify-center group-hover:bg-zinc-800 transition-colors border border-zinc-700/30">
+                                                <CoffeeBeanIcon size="w-28 h-28" />
+                                            </div>
+                                            <h3 className="text-2xl font-bold mb-3 group-hover:text-emerald-400 transition-colors tracking-tight italic">{product.name}</h3>
+                                            <p className="text-zinc-500 text-sm mb-10 h-10 line-clamp-2 leading-relaxed">{product.desc}</p>
+                                            <div className="flex justify-between items-center pt-8 border-t border-zinc-800/50">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Price</span>
+                                                    <span className="text-2xl font-black font-mono tracking-tighter">¥{product.price.toLocaleString()}</span>
+                                                </div>
+                                                /*商品選択ボタン*/
+                                                <button 
+                                                                    /*選択中の商品リストに追加*/    /*サブウインドウの表示フラグがたつ*/
+                                                    onClick={() => { setSelectedProduct(product); setIsConfirmOpen(true); }}
+                                                    className="bg-emerald-700 hover:bg-emerald-600 px-6 py-3 rounded-2xl text-xs font-black shadow-lg transition-all active:scale-95 uppercase tracking-wider"
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <AuthForm type={currentPage} />
+                        )}
+                    </main>
+
+                    <footer className="bg-zinc-900/50 border-t border-zinc-800/50 py-16">
+                        <div className="container mx-auto px-4 text-center">
+                            <h2 className="text-2xl font-black italic tracking-tighter mb-4 text-emerald-800 opacity-50 cursor-pointer" onClick={() => setCurrentPage('home')}>NEBULA COFFEE</h2>
+                            <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.4em]">
+                                &copy; 2026 Nebula Coffee Roasters. All rights reserved.
+                            </p>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
