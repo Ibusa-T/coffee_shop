@@ -1,9 +1,11 @@
 from coffee_shop.repositories.abstractrepository import Baserepository
-
+from coffee_shop.container.master_factory import MasterFactory
 
 class ProductTypeRepository(Baserepository):
-    name = 'ProductType'
-    master_factory = MasterFactory
+    
+    def __init__(cls):
+        cls.name = 'ProductType'
+        cls.master_factory = MasterFactory
 
     @classmethod
     def insert(cls, **kwargs):
