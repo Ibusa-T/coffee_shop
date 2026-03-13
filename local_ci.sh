@@ -28,6 +28,14 @@ uv run python manage.py check
 echo -e "\n🧪 Step 3: Running tests..."
 uv run python manage.py test
 
+# post-checkout (ブランチ切り替え後に実行)
+echo "uv sync" > .git/hooks/post-checkout
+chmod +x .git/hooks/post-checkout
+
+# post-merge (merge や pull の後に実行)
+echo "uv sync" > .git/hooks/post-merge
+chmod +x .git/hooks/post-merge
+
 echo -e "\n${GREEN}=========================================${NC}"
 echo -e "${GREEN}   ✅ All Checks Passed! Ready to Push!  ${NC}"
 echo -e "${GREEN}=========================================${NC}"

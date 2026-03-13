@@ -4,9 +4,9 @@ name: Django Test CI
 # 2. トリガーの設定
 on:
   push:
-    branches: [ "main", "master" ] # mainかmasterにPushされたら起動
+    branches: ["main", "master"] # mainかmasterにPushされたら起動
   pull_request:
-    branches: [ "main", "master" ] # PRが作られた時も起動
+    branches: ["main", "master"] # PRが作られた時も起動
 
 # 3. 具体的な作業内容
 jobs:
@@ -31,7 +31,9 @@ jobs:
       # ステップ4：ライブラリのインストール
       - name: Install dependencies
         run: uv sync --all-extras --dev
-
+      # ブランチごとの依存関係の差異を解消
+      - name: reset dependencies
+        run: uv sync
       # ステップ5：テスト実行（ここが本番！）
       - name: Run Tests
         run: |

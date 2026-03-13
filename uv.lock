@@ -65,6 +65,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "django" },
     { name = "factory-boy" },
+    { name = "sqlparse" },
     { name = "whitenoise" },
 ]
 
@@ -78,6 +79,7 @@ dev = [
 requires-dist = [
     { name = "django", specifier = ">=6.0.3" },
     { name = "factory-boy", specifier = ">=3.3.3" },
+    { name = "sqlparse", specifier = ">=0.5.5" },
     { name = "whitenoise", specifier = ">=6.12.0" },
 ]
 
