@@ -1,10 +1,12 @@
 #本番用ファクトリ
 import factory
-
-from coffee_shop.container.models import (
-    Consumer, Delivery, Product, ProductType, 
-    SalesInfo, SalePeriod, Slip
-)
+from coffee_shop.container.consumer_model import Consumer
+from coffee_shop.container.delivery_model import Delivery
+from coffee_shop.container.product_model import Product
+from coffee_shop.container.product_type_model import ProductType
+from coffee_shop.container.sales_info_model import SalesInfo
+from coffee_shop.container.sale_period_model import SalePeriod
+from coffee_shop.container.slip_model import Slip
 
 
 class MasterFactory(factory.django.DjangoModelFactory):

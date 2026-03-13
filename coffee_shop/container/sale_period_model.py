@@ -6,12 +6,14 @@
 #   * Remove `managed = True` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
 
-from cofee_shop.container.models import AbstractModel
-class SalePeriod(models.Model):
-    sales_code = models.CharField(db_column='SALES_CODE', primary_key=True)  # Field name made lowercase.
-    sale_title = models.TextField(db_column='SALE_TITLE')  # Field name made lowercase.
-    start_date = models.DateField(db_column='START_DATE')  # Field name made lowercase.
-    end_date = models.DateField(db_column='END_DATE')  # Field name made lowercase.
+# coffee_shop/container/sale_period_model.py
+from coffee_shop.container.abstract_model import AbstractModel
+
+class SalePeriod(AbstractModel):
+    sales_code = AbstractModel.AbstractCharField(db_column='SALES_CODE', primary_key=True, max_length=10)
+    sale_title = AbstractModel.AbstractTextField(db_column='SALE_TITLE')
+    start_date = AbstractModel.AbstractDateField(db_column='START_DATE')
+    end_date = AbstractModel.AbstractDateField(db_column='END_DATE')
 
     class Meta:
         managed = True
