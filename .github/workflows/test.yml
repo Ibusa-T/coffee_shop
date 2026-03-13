@@ -1,0 +1,38 @@
+# 1. 指示書の名前
+name: Django Test CI
+
+# 2. トリガーの設定
+on:
+  push:
+    branches: [ "main", "master" ] # mainかmasterにPushされたら起動
+  pull_request:
+    branches: [ "main", "master" ] # PRが作られた時も起動
+
+# 3. 具体的な作業内容
+jobs:
+  test:
+    runs-on: ubuntu-latest # GitHubが用意する最新のLinux環境で動かす
+
+    steps:
+      # ステップ1：ソースコードをLinux環境にコピー（チェックアウト）
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ステップ2：uv（パッケージマネージャー）をセットアップ
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true # 2回目以uvが有効になっている
+
+      # ステップ3：Python環境の構築
+      - name: Set up Python
+        run: uv python install 3.12
+
+      # ステップ4：ライブラリのインストール
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      # ステップ5：テスト実行（ここが本番！）
+      - name: Run Tests
+        run: |
+          uv run python manage.py test
