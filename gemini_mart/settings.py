@@ -101,6 +101,65 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# settings.py に追記
+import os
+from coffee_shop.gemini_mart.sql_formatter import SQLFormatter
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    #ログデータ形式
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
+        },
+        'sql': {
+            '()':SQLFormatter,
+            'format': '%(asctime)s [%(levelname)s] [SQL] %(name)s:\n%(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
+        },
+    },
+    #ログイベント発生時の出力先などを設定
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'logs/develop.log',
+            'formatter': 'standard',
+        },
+        'console_sql': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'sql', # コンソールに色付きで出す
+        },
+        'file_sql': {
+            'class': 'logging.FileHandler',
+            'filename': 'logs/sql.log',
+            'formatter': 'sql', # ファイルにも整形済みを出す
+        },
+    },
+    'loggers': {
+        # 自分で書いたコードのログ
+        'coffee_shop': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+        },
+        # SQLクエリのログ（デバッグやテスト時に便利）
+        'django.db.backends': {
+            'handlers': ['backends'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+
+
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 

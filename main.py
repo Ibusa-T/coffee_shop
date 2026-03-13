@@ -1,6 +1,6 @@
-def main():
-    print("Hello from geminimart!")
+def call():
+    print("Hello From Geminimart!")
 
 
 if __name__ == "__main__":
-    main()
+    call()
