@@ -28,14 +28,20 @@ uv run python manage.py check
 echo -e "\n🧪 Step 3: Running tests..."
 uv run python manage.py test
 
-# post-checkout (ブランチ切り替え後に実行)
-echo "uv sync" > .git/hooks/post-checkout
-chmod +x .git/hooks/post-checkout
+# --- Git Hooks の自動セットアップ ---
+# ファイルが存在しない場合のみ作成し、実行権限を付与します
 
-# post-merge (merge や pull の後に実行)
-echo "uv sync" > .git/hooks/post-merge
-chmod +x .git/hooks/post-merge
+if [ ! -f .git/hooks/post-checkout ]; then
+    echo "🔧 Setting up post-checkout hook..."
+    echo -e "#!/bin/sh\nuv sync" > .git/hooks/post-checkout
+    chmod +x .git/hooks/post-checkout
+fi
 
+if [ ! -f .git/hooks/post-merge ]; then
+    echo "🔧 Setting up post-merge hook..."
+    echo -e "#!/bin/sh\nuv sync" > .git/hooks/post-merge
+    chmod +x .git/hooks/post-merge
+fi
 echo -e "\n${GREEN}=========================================${NC}"
 echo -e "${GREEN}   ✅ All Checks Passed! Ready to Push!  ${NC}"
 echo -e "${GREEN}=========================================${NC}"
