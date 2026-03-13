@@ -1,8 +1,10 @@
 from coffee_shop.repositories.abstractrepository import Baserepository
-
+from coffee_shop.container.master_factory import MasterFactory
 class SlipRepository(Baserepository):
-    name = 'Slip'
-    master_factory = MasterFactory
+    
+    def __init__(cls):
+        cls.name = 'Slip'
+        cls.master_factory = MasterFactory
         
     @classmethod
     def insert(cls, **kwargs):

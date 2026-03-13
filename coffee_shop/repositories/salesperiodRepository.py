@@ -1,15 +1,17 @@
 from coffee_shop.repositories.abstractrepository import Baserepository
-
+from coffee_shop.container.master_factory import MasterFactory
 class SalePeriodRepository(Baserepository):
-    name = 'SalePeriod'
-    master_factory = MasterFactory
-'
+    
+    def __init__(cls):
+        cls.name = 'SalePeriod'
+        cls.master_factory = MasterFactory
+    
     @classmethod
     def insert(cls, **kwargs):
         # Factoryを使用してインスタンスを生成・保存
         model = cls.master_factory.create_for(cls.name, **kwargs)
         model.save()
-     @classmethod
+    @classmethod
     def findBySalestitle(cls,salestitle):
         return cls.master_factory.get_model(cls.name).objects.get(salestitle=salestitle)
 
