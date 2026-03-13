@@ -103,7 +103,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # settings.py に追記
 import os
-from coffee_shop.gemini_mart.sql_formatter import SQLFormatter
+from .sql_formatter import SQLFormatter
 
 LOGGING = {
     'version': 1,
@@ -149,7 +149,7 @@ LOGGING = {
         },
         # SQLクエリのログ（デバッグやテスト時に便利）
         'django.db.backends': {
-            'handlers': ['backends'],
+            'handlers': ['console_sql','file_sql'],
             'level': 'DEBUG',
             'propagate': False,
         },
